@@ -121,6 +121,8 @@ const HTTP_NOT_FOUND_RESPONSE:&'static [u8] = b"HTTP/1.1 400\r\nContent-Length: 
 const HTTP_TUNNEL_REFUSED_RESPONSE:&'static [u8] = b"HTTP/1.1 500\r\nContent-Length: 32\r\n\r\nTunnel says: connection refused.";
 const HTTP_OK_RESPONSE:&'static [u8] = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok";
 const HEALTH_CHECK_PATH:&'static [u8] = b"/0xDEADBEEF_HEALTH_CHECK";
+const CTRL_SERVER_HEALTH_CHECK_PATH:&'static [u8] = b"/health_check";
+const CTRL_SERVER_WORMHOLE_PATH:&'static [u8] = b"/wormhole";
 
 /// Filter incoming remote streams
 async fn peek_http_request_host(mut socket: TcpStream) -> Option<(TcpStream, String)> {
@@ -155,16 +157,45 @@ async fn peek_http_request_host(mut socket: TcpStream) -> Option<(TcpStream, Str
         return None
     }
 
-    // Handle the health check route
-    if req.path.map(|s| s.as_bytes()) == Some(HEALTH_CHECK_PATH) {
-        info!("Health Check Triggered");
+    match req.path.map(|s| s.as_bytes()) {
+        // Handle the health check route
+        Some(HEALTH_CHECK_PATH) => {
+            info!("Health Check Triggered");
 
-        let _ = socket.write_all(HTTP_OK_RESPONSE).await.map_err(|e| {
-            error!("failed to write health_check: {:?}", e);
-        });
+            let _ = socket.write_all(HTTP_OK_RESPONSE).await.map_err(|e| {
+                error!("failed to write health_check: {:?}", e);
+            });
 
-        return None
-    }
+            return None
+        }
+        // Handle the control server health check
+        Some(CTRL_SERVER_HEALTH_CHECK_PATH) => {
+            info!("Health Check #2 triggered");
+
+            let _ = socket.write_all(HTTP_OK_RESPONSE).await.map_err(|e| {
+                error!("failed to write health_check #2: {:?}", e);
+            });
+
+            return None
+        }
+        // Handle the control server wormhole
+        Some(CTRL_SERVER_WORMHOLE_PATH) => {
+            let client_conn = warp::ws().map(move |ws: Ws| {
+                ws.on_upgrade(control_server::handle_new_connection)
+            });
+
+            let incoming = tokio::stream::once::<Result<TcpStream, Box<dyn std::error::Error + Sync + Send>>>(Ok(socket));
+
+            let server = warp::serve(client_conn);
+
+            let task = server.serve_incoming(incoming);
+
+            tokio::spawn(task);
+
+            return None;
+        }
+        _ => {}
+    };
 
     // look for a host header
     if let Some(Ok(host)) = req.headers.iter()

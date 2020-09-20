@@ -1,21 +1,7 @@
 pub use super::*;
-use std::net::SocketAddr;
 use std::time::Duration;
 
-pub fn spawn<A: Into<SocketAddr>>(addr: A) {
-    let health_check = warp::get().and(warp::path("health_check")).map(|| {
-        log::info!("Health Check #2 triggered");
-        "ok"
-    });
-    let client_conn = warp::path("wormhole").and(warp::ws()).map(move |ws: Ws| {
-        ws.on_upgrade(handle_new_connection)
-    });
-
-    // spawn our websocket control server
-    tokio::spawn(warp::serve(client_conn.or(health_check)).run(addr.into()));
-}
-
-async fn handle_new_connection(websocket: WebSocket) {
+pub async fn handle_new_connection(websocket: WebSocket) {
     let (websocket, client_id, sub_domain) = match try_client_handshake(websocket).await {
         Some(ws) => ws,
         None => return,

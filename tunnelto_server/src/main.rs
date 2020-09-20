@@ -55,9 +55,6 @@ pub fn blocked_sub_domains_suffixes() -> Vec<String> {
 async fn main() {
     pretty_env_logger::init();
 
-    info!("starting wormhole server");
-    control_server::spawn(([0,0,0,0], 5000));
-
     let listen_addr = format!("0.0.0.0:{}", std::env::var("PORT").unwrap_or("8080".to_string()));
     info!("listening on: {}", &listen_addr);
 
