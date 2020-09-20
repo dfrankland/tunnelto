@@ -2,7 +2,7 @@ use rand::prelude::*;
 use serde::{Serialize, Deserialize};
 use sha2::Digest;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct SecretKey(pub String);
 impl SecretKey {
@@ -54,22 +54,13 @@ pub struct ClientHello {
     pub client_type: ClientType
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ClientHelloV1 {
-    pub id: ClientId,
-    pub sub_domain: Option<String>,
-    pub is_anonymous: bool,
-    unix_seconds: i64,
-    signature: String,
-}
-
 impl ClientHello {
     pub fn generate(sub_domain: Option<String>, typ: ClientType) -> Self {
         ClientHello { id: ClientId::generate(), client_type: typ, sub_domain}
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum ClientType {
     Auth { key: SecretKey },
     Anonymous,

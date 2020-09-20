@@ -70,7 +70,7 @@ SUBCOMMANDS:
 ## Testing Locally
 ```shell script
 # Run the Server: xpects TCP traffic on 8080 and control websockets on 5000
-ALLOWED_HOSTS="localhost" ALLOW_UNKNOWN_CLIENTS=1 cargo run --bin tunnelto_server
+ALLOWED_HOSTS="localhost" cargo run --bin tunnelto_server
 
 # Run a local tunnelto client talking to your local tunnelto_server
 CTRL_HOST="localhost" CTRL_PORT=5000 CTRL_TLS_OFF=1 cargo run --bin tunnelto -- start -p 8000
@@ -82,8 +82,6 @@ curl -H '<subdomain>.localhost' "http://localhost:8080/some_path?with=somequery"
 
 ### Server Env Vars
 - `ALLOWED_HOSTS`: which hostname suffixes do we allow forwarding on
-- `SECRET_KEY`: an authentication key for restricting access to your tunnelto server
-- `ALLOW_UNKNOWN_CLIENTS`: a boolean flag, if set, enables unknown (no authentication) clients to use your tunnelto server. Note that unknown clients are not allowed to chose a subdomain via `-s`.
 
 
 ## Caveats
